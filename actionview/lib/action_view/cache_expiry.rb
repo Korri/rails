@@ -15,7 +15,7 @@ module ActionView
 
       def updated?
         build_watcher unless @watcher
-        @previous_change || @watcher.updated?
+        @previous_change || @watcher&.updated?
       end
 
       def execute
@@ -36,10 +36,15 @@ module ActionView
 
         def build_watcher
           @mutex.synchronize do
+            new_dirs = dirs_to_watch
+
+            # Skip the build entirely if there are no view paths to watch and we have not built a watcher yet.
+            return if new_dirs.empty? && @watcher.nil?
+
             old_watcher = @watcher
 
-            if @watched_dirs != dirs_to_watch
-              @watched_dirs = dirs_to_watch
+            if @watched_dirs != new_dirs
+              @watched_dirs = new_dirs
               new_watcher = @watcher_class.new([], @watched_dirs) do
                 reload!
               end
